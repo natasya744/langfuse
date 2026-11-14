@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { Prisma, Role } from "@langfuse/shared";
 
 import { auditLog } from "@/src/features/audit-logs/auditLog";
+import { getSessionUserId } from "@/src/features/auth/lib/sessionAccessors";
 import {
   getSfdcService,
   type SetUserRoleInput,
@@ -129,7 +130,7 @@ export async function inviteOrganizationMember({
   if (input.projectId && input.projectRole) {
     const entitled = hasEntitlement({
       entitlement: "rbac-project-roles",
-      sessionUser: ctx.session.user,
+      session: ctx.session,
       orgId: input.orgId,
     });
     if (!entitled)
@@ -249,7 +250,7 @@ export async function inviteOrganizationMember({
         prisma: ctx.prisma,
         orgId: input.orgId,
         entitlementLimit: "organization-member-count",
-        sessionUser: ctx.session.user,
+        session: ctx.session,
         countCurrentUsage: countSeatsInUse,
         create: async (tx) => {
           const createdOrgMembership = await createOrgMembership(tx, {
@@ -309,7 +310,7 @@ export async function inviteOrganizationMember({
         prisma: ctx.prisma,
         orgId: input.orgId,
         entitlementLimit: "organization-member-count",
-        sessionUser: ctx.session.user,
+        session: ctx.session,
         countCurrentUsage: countSeatsInUse,
         create: (tx) =>
           tx.membershipInvitation.create({
@@ -325,7 +326,7 @@ export async function inviteOrganizationMember({
                 input.projectRole && input.projectRole !== Role.NONE && project
                   ? input.projectRole
                   : null,
-              invitedByUserId: ctx.session.user.id,
+              invitedByUserId: getSessionUserId(ctx.session),
             },
           }),
       });
